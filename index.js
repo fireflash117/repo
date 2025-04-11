@@ -2,7 +2,7 @@ app.post('/webhook', async (req, res) => {
   const airportName = req.body.sessionInfo.parameters.destination_airport;
 
   const response = await fetch(`https://api.api-ninjas.com/v1/airports?name=${encodeURIComponent(airportName)}`, {
-    headers: { 'X-Api-Key': 'YOUR_API_KEY' }
+    headers: { 'X-Api-Key': '8ROzg+wu73IprZRljrM+rA==zoBfzP4FEv1NmUnL' }
   });
   const data = await response.json();
 
