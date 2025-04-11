@@ -1,66 +1,38 @@
-const express = require("express");
-const axios = require("axios");
-const bodyParser = require("body-parser");
+app.post('/webhook', async (req, res) => {
+  const airportName = req.body.sessionInfo.parameters.destination_airport;
 
-const app = express();
-app.use(bodyParser.json());
+  const response = await fetch(`https://api.api-ninjas.com/v1/airports?name=${encodeURIComponent(airportName)}`, {
+    headers: { 'X-Api-Key': 'YOUR_API_KEY' }
+  });
+  const data = await response.json();
 
-const API_KEY = process.env.API_KEY;
-
-app.post("/webhook", async (req, res) => {
-  const country = req.body.sessionInfo?.parameters?.country || "India";
-
-  try {
-    const response = await axios.get("https://api.api-ninjas.com/v1/city", {
-      params: {
-        country: country,
-        limit: 5,
-      },
-      headers: {
-        "X-Api-Key":8ROzg+wu73IprZRljrM+rA==zoBfzP4FEv1NmUnL,
-      },
-    });
-
-    const cities = response.data.map((city) => city.name);
-
+  if (data.length > 0) {
+    // Valid airport found
     res.json({
-      fulfillment_response: {
-        messages: [
-          {
-            text: {
-              text: [
-                `Here are some cities in ${country}: ${cities.join(", ")}. Which one would you like to choose?`,
-              ],
-            },
-          },
-        ],
-      },
-      sessionInfo: {
+      session_info: {
         parameters: {
-          cities: cities,
-        },
+          destination_airport: data[0].name,
+          airport_city: data[0].city,
+          airport_country: data[0].country
+        }
       },
+      fulfillment_response: {
+        messages: [{
+          text: { text: [`Got it — flying into ${data[0].name}, ${data[0].city}, ${data[0].country}`] }
+        }]
+      }
     });
-  } catch (error) {
-    console.error("Error fetching cities:", error.response?.data || error.message);
-
+  } else {
+    // Invalid airport
     res.json({
       fulfillment_response: {
-        messages: [
-          {
-            text: {
-              text: [
-                `Sorry, I couldn't fetch the cities for ${country}. Please try again later.`,
-              ],
-            },
-          },
-        ],
+        messages: [{ text: { text: ["Hmm, I couldn't find that airport. Can you try a different one?"] } }],
       },
+      session_info: {
+        parameters: {
+          destination_airport: null // Clear invalid input
+        }
+      }
     });
   }
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Webhook server is running on port ${PORT}`);
 });
